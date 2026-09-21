@@ -63,13 +63,20 @@ export function readAppEnv(root) {
 /** File values under the process environment: an explicit override wins. */
 export function mergeAppEnv(appEnv, processEnv) {
   const mapped = { ...appEnv };
-  if (mapped.VITE_AUTH_ENABLED && !mapped.NEXT_PUBLIC_AUTH_ENABLED) {
+  if (mapped.VITE_AUTH_ENABLED && mapped.NEXT_PUBLIC_AUTH_ENABLED === undefined) {
     mapped.NEXT_PUBLIC_AUTH_ENABLED = mapped.VITE_AUTH_ENABLED;
   }
-  if (mapped.VITE_STUN_URLS && !mapped.NEXT_PUBLIC_STUN_URLS) {
+  if (mapped.VITE_STUN_URLS && mapped.NEXT_PUBLIC_STUN_URLS === undefined) {
     mapped.NEXT_PUBLIC_STUN_URLS = mapped.VITE_STUN_URLS;
   }
-  return { ...mapped, ...processEnv };
+  const merged = { ...mapped, ...processEnv };
+  if (processEnv.VITE_AUTH_ENABLED && processEnv.NEXT_PUBLIC_AUTH_ENABLED === undefined) {
+    merged.NEXT_PUBLIC_AUTH_ENABLED = processEnv.VITE_AUTH_ENABLED;
+  }
+  if (processEnv.VITE_STUN_URLS && processEnv.NEXT_PUBLIC_STUN_URLS === undefined) {
+    merged.NEXT_PUBLIC_STUN_URLS = processEnv.VITE_STUN_URLS;
+  }
+  return merged;
 }
 
 /**

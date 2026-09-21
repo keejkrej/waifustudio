@@ -8,7 +8,11 @@ const nextConfig: NextConfig = {
     "kysely",
   ],
   async rewrites() {
-    return [{ source: "/__app-env", destination: "/api/app-env" }];
+    return [
+      { source: "/__app-env", destination: "/api/app-env" },
+      { source: "/__grok/manifest.webmanifest", destination: "/api/grok/manifest" },
+      { source: "/__grok/manifest.json", destination: "/api/grok/manifest" },
+    ];
   },
 };
 

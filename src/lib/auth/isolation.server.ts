@@ -1,4 +1,4 @@
-import { getRequest } from "@/lib/request-context";
+import { getRequest } from "../request-context.ts";
 
 /**
  * Fetch-Metadata sibling isolation — **server-only**.

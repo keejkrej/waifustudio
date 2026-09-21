@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { getRequest } from "@/lib/request-context";
+import { getRequest } from "../request-context.ts";
 import { gateIdentityEnabled } from "./gate-identity.server";
 import { auth, authConfigured } from "./server";
 

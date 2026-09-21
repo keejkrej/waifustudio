@@ -381,6 +381,8 @@ describe("gateIdentityEnabled", () => {
   it("is enabled by default with no gate env vars", () => {
     delete process.env.GROK_PROJECT_ID;
     delete process.env.GROK_GATE_ORIGIN;
+    delete process.env.VITE_AUTH_ENABLED;
+    delete process.env.NEXT_PUBLIC_AUTH_ENABLED;
     assert.equal(gateIdentityEnabled(), true);
   });
 
@@ -390,6 +392,15 @@ describe("gateIdentityEnabled", () => {
       assert.equal(gateIdentityEnabled(), false);
     } finally {
       delete process.env.VITE_AUTH_ENABLED;
+    }
+  });
+
+  it("is disabled when NEXT_PUBLIC_AUTH_ENABLED is false", () => {
+    process.env.NEXT_PUBLIC_AUTH_ENABLED = "false";
+    try {
+      assert.equal(gateIdentityEnabled(), false);
+    } finally {
+      delete process.env.NEXT_PUBLIC_AUTH_ENABLED;
     }
   });
 });

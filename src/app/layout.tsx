@@ -24,7 +24,16 @@ const APP_NAME = "WaifuStudio";
 const APP_DESCRIPTION =
   "Anime character video studio — lock a cast, generate stills, then image-to-video.";
 
+const siteUrl =
+  process.env.BETTER_AUTH_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:8080");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: APP_NAME,
   description: APP_DESCRIPTION,
   applicationName: APP_NAME,
