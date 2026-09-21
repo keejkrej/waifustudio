@@ -20,9 +20,9 @@ export function CastView() {
   function createBlank() {
     const c: CharacterCard = {
       id: uid("cast"),
-      name: "新角色",
-      game: "未命名作品",
-      role: "待定",
+      name: "New character",
+      game: "Untitled work",
+      role: "TBD",
       look: "",
       outfit: "",
       props: "",
@@ -64,7 +64,7 @@ export function CastView() {
       onFiles={onFiles}
     />
   ) : (
-    <p className="text-sm text-muted">选择或新建一张角色卡。</p>
+    <p className="text-sm text-muted">Select or create a character card.</p>
   );
 
   return (
@@ -73,14 +73,14 @@ export function CastView() {
         <div className="flex items-end justify-between gap-3">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted">Cast</p>
-            <h1 className="mt-1 font-display text-2xl tracking-tight md:text-3xl">角色库</h1>
+            <h1 className="mt-1 font-display text-2xl tracking-tight md:text-3xl">Cast</h1>
             <p className="mt-1 hidden max-w-lg text-sm text-muted md:block">
-              上传立绘或截图作为参考图。锁定提示词会在每次生图/生视频时前置，相当于 IP-Adapter 的文本侧。
+              Upload a portrait or screenshot as a reference. The lock prompt is prepended on every still and clip — text-side IP-Adapter.
             </p>
           </div>
           <Button onClick={createBlank}>
             <Plus className="size-4" />
-            新建
+            New
           </Button>
         </div>
         <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
@@ -102,7 +102,7 @@ export function CastView() {
                   <img src={c.refs[0]} alt="" className="size-full object-cover" />
                 ) : (
                   <div className="grid size-full place-items-center text-xs text-subtle">
-                    无参考图
+                    No reference
                   </div>
                 )}
               </div>
@@ -123,7 +123,7 @@ export function CastView() {
             <div className="flex h-12 items-center gap-1 px-1">
               <Button variant="ghost" size="icon" onClick={() => setSheet(false)}>
                 <ChevronLeft className="size-5" />
-                <span className="sr-only">返回</span>
+                <span className="sr-only">Back</span>
               </Button>
               <p className="font-medium">{current.name}</p>
             </div>
@@ -153,10 +153,10 @@ function CastEditor({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="hidden font-medium lg:block">角色卡</h2>
+        <h2 className="hidden font-medium lg:block">Character card</h2>
         <div className="flex w-full gap-2 lg:w-auto">
           <Button size="sm" variant="outline" className="h-11 flex-1 lg:h-9 lg:flex-none" onClick={onUse}>
-            {pipelineId === current.id ? "流程中" : "用于流程"}
+            {pipelineId === current.id ? "In pipeline" : "Use in pipeline"}
           </Button>
           {!current.sample ? (
             <Button size="icon" variant="ghost" className="lg:size-9" onClick={onRemove}>
@@ -165,43 +165,43 @@ function CastEditor({
           ) : null}
         </div>
       </div>
-      <Field label="名字">
+      <Field label="Name">
         <Input value={current.name} onChange={(e) => onUpsert({ ...current, name: e.target.value })} />
       </Field>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="作品">
+        <Field label="Title">
           <Input value={current.game} onChange={(e) => onUpsert({ ...current, game: e.target.value })} />
         </Field>
-        <Field label="定位">
+        <Field label="Role">
           <Input value={current.role} onChange={(e) => onUpsert({ ...current, role: e.target.value })} />
         </Field>
       </div>
-      <Field label="外形">
+      <Field label="Look">
         <Textarea rows={2} value={current.look} onChange={(e) => onUpsert({ ...current, look: e.target.value })} />
       </Field>
-      <Field label="服装">
+      <Field label="Outfit">
         <Textarea
           rows={2}
           value={current.outfit}
           onChange={(e) => onUpsert({ ...current, outfit: e.target.value })}
         />
       </Field>
-      <Field label="道具">
+      <Field label="Props">
         <Input value={current.props} onChange={(e) => onUpsert({ ...current, props: e.target.value })} />
       </Field>
       <div className="flex justify-end">
         <Button size="sm" variant="ghost" className="min-h-11 md:min-h-9" onClick={() => onUpsert({ ...current, lockPrompt: buildLockPrompt(current) })}>
-          生成锁定词
+          Build lock prompt
         </Button>
       </div>
-      <Field label="锁定提示词">
+      <Field label="Lock prompt">
         <Textarea
           rows={4}
           value={current.lockPrompt}
           onChange={(e) => onUpsert({ ...current, lockPrompt: e.target.value })}
         />
       </Field>
-      <Field label="参考图">
+      <Field label="References">
         <input
           type="file"
           accept="image/*"

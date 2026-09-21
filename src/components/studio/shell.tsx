@@ -22,12 +22,12 @@ import { SettingsView } from "./settings-view";
 import { QueueBar } from "./queue-bar";
 
 const NAV: { id: ViewId; label: string; icon: typeof Workflow }[] = [
-  { id: "pipeline", label: "流程", icon: Layers },
-  { id: "graph", label: "节点", icon: Workflow },
-  { id: "cast", label: "角色", icon: Users },
-  { id: "gallery", label: "图库", icon: GalleryVerticalEnd },
-  { id: "playbook", label: "手册", icon: BookOpen },
-  { id: "settings", label: "设置", icon: KeyRound },
+  { id: "pipeline", label: "Flow", icon: Layers },
+  { id: "graph", label: "Graph", icon: Workflow },
+  { id: "cast", label: "Cast", icon: Users },
+  { id: "gallery", label: "Gallery", icon: GalleryVerticalEnd },
+  { id: "playbook", label: "Guide", icon: BookOpen },
+  { id: "settings", label: "Settings", icon: KeyRound },
 ];
 
 const MOBILE_NAV = NAV.filter((n) => n.id !== "playbook");
@@ -88,8 +88,8 @@ export function StudioShell() {
                 key ? "border-ok/40 text-ok" : "border-warn/40 text-warn",
               )}
             >
-              <span className="sm:hidden">{key ? "Key" : "无 Key"}</span>
-              <span className="hidden sm:inline">{key ? "OpenRouter 已连接" : "未填写 API Key"}</span>
+              <span className="sm:hidden">{key ? "Key" : "No key"}</span>
+              <span className="hidden sm:inline">{key ? "OpenRouter connected" : "Add API key"}</span>
             </button>
           </div>
         </header>

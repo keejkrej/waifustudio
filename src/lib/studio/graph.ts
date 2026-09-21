@@ -6,28 +6,28 @@ export const NODE_PORTS: Record<
 > = {
   character: {
     inputs: [],
-    outputs: [{ id: "image", label: "立绘", type: "image" }],
+    outputs: [{ id: "image", label: "Portrait", type: "image" }],
   },
   prompt: {
     inputs: [],
-    outputs: [{ id: "text", label: "提示词", type: "text" }],
+    outputs: [{ id: "text", label: "Prompt", type: "text" }],
   },
   image: {
     inputs: [
-      { id: "prompt", label: "提示词", type: "text" },
-      { id: "refs", label: "参考", type: "image" },
+      { id: "prompt", label: "Prompt", type: "text" },
+      { id: "refs", label: "Refs", type: "image" },
     ],
-    outputs: [{ id: "image", label: "图像", type: "image" }],
+    outputs: [{ id: "image", label: "Image", type: "image" }],
   },
   video: {
     inputs: [
-      { id: "prompt", label: "动作", type: "text" },
-      { id: "frame", label: "首帧", type: "image" },
+      { id: "prompt", label: "Motion", type: "text" },
+      { id: "frame", label: "First frame", type: "image" },
     ],
-    outputs: [{ id: "video", label: "视频", type: "video" }],
+    outputs: [{ id: "video", label: "Video", type: "video" }],
   },
   output: {
-    inputs: [{ id: "media", label: "成片", type: "media" }],
+    inputs: [{ id: "media", label: "Cut", type: "media" }],
     outputs: [],
   },
 };
@@ -36,11 +36,11 @@ export const NODE_META: Record<
   NodeKind,
   { label: string; tint: "cast" | "prompt" | "still" | "motion" | "muted"; w: number; h: number }
 > = {
-  character: { label: "角色卡", tint: "cast", w: 240, h: 188 },
-  prompt: { label: "提示词", tint: "prompt", w: 260, h: 196 },
-  image: { label: "静帧 / KSampler", tint: "still", w: 268, h: 248 },
-  video: { label: "图生视频", tint: "motion", w: 268, h: 248 },
-  output: { label: "输出预览", tint: "muted", w: 240, h: 200 },
+  character: { label: "Cast card", tint: "cast", w: 240, h: 188 },
+  prompt: { label: "Prompt", tint: "prompt", w: 260, h: 196 },
+  image: { label: "Still / KSampler", tint: "still", w: 268, h: 248 },
+  video: { label: "Image-to-video", tint: "motion", w: 268, h: 248 },
+  output: { label: "Output preview", tint: "muted", w: 240, h: 200 },
 };
 
 export function canConnect(fromType: PortType, toType: PortType): boolean {
@@ -73,7 +73,7 @@ export function topoSort(nodes: GraphNode[], edges: GraphEdge[]): GraphNode[] {
     }
   }
   if (out.length !== nodes.length) {
-    throw new Error("工作流存在环，请检查连线");
+    throw new Error("Cycle in the graph — check the wires");
   }
   const map = new Map(nodes.map((n) => [n.id, n]));
   return out.map((id) => map.get(id)!);

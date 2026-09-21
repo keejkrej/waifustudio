@@ -36,7 +36,7 @@ export function defaultGraph(): { nodes: GraphNode[]; edges: GraphEdge[] } {
     kind: "character",
     x: 36,
     y: 48,
-    title: "角色卡",
+    title: "Cast card",
     data: { characterId: SAMPLE_CAST[0]!.id },
   };
   const prompt: GraphNode = {
@@ -44,7 +44,7 @@ export function defaultGraph(): { nodes: GraphNode[]; edges: GraphEdge[] } {
     kind: "prompt",
     x: 36,
     y: 280,
-    title: "提示词",
+    title: "Prompt",
     data: {
       text: `${firstRecipe.still}. ${SAMPLE_CAST[0]!.lockPrompt}`,
       negative: SAMPLE_CAST[0]!.negative,
@@ -56,7 +56,7 @@ export function defaultGraph(): { nodes: GraphNode[]; edges: GraphEdge[] } {
     kind: "image",
     x: 300,
     y: 88,
-    title: "静帧",
+    title: "Still",
     data: {
       model: DEFAULT_SETTINGS.imageModel,
       prompt: "",
@@ -72,7 +72,7 @@ export function defaultGraph(): { nodes: GraphNode[]; edges: GraphEdge[] } {
     kind: "video",
     x: 560,
     y: 88,
-    title: "图生视频",
+    title: "Image-to-video",
     data: {
       model: DEFAULT_SETTINGS.videoModel,
       prompt: firstRecipe.motion,
@@ -87,8 +87,8 @@ export function defaultGraph(): { nodes: GraphNode[]; edges: GraphEdge[] } {
     kind: "output",
     x: 820,
     y: 88,
-    title: "成片",
-    data: { label: "输出" },
+    title: "Output",
+    data: { label: "Output" },
   };
   return {
     nodes: [character, prompt, image, video, output],
@@ -166,7 +166,7 @@ export const useStudio = create<StudioState>()(
         {
           id: "gal_sample_rain",
           kind: "image",
-          title: "绫 · 雨巷静帧（示例）",
+          title: "Aoi · rain street still (sample)",
           prompt: "rain-wet stone street at dusk",
           model: "sample",
           characterId: "cast_aoi",
@@ -252,7 +252,7 @@ export const useStudio = create<StudioState>()(
       patchPipeline: (p) => set({ pipeline: { ...get().pipeline, ...p } }),
     }),
     {
-      name: "waifustudio-v2",
+      name: "waifustudio-v3",
       skipHydration: true,
       partialize: (s) => ({
         view: s.view,

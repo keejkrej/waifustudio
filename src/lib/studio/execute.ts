@@ -22,7 +22,7 @@ function keyOrThrow(): string {
   const k = useStudio.getState().apiKey.trim();
   if (!k) {
     useStudio.getState().setView("settings");
-    throw new Error("请先在设置里填写 OpenRouter API Key");
+    throw new Error("Add an OpenRouter API key in Settings first");
   }
   return k;
 }
@@ -49,7 +49,7 @@ export async function generateStill(opts: {
   const prompt = [lock, opts.prompt].filter(Boolean).join(". ");
   const job = newJob({
     kind: "image",
-    title: `${opts.character.name} · 静帧`,
+    title: `${opts.character.name} · still`,
     model: opts.model,
     prompt,
     nodeId: opts.nodeId,
@@ -85,7 +85,7 @@ export async function generateStill(opts: {
     st.addGallery({
       id: uid("gal"),
       kind: "image",
-      title: `${opts.character.name} · 静帧`,
+      title: `${opts.character.name} · still`,
       prompt,
       model: opts.model,
       characterId: opts.character.id,
@@ -98,10 +98,10 @@ export async function generateStill(opts: {
       st.patchNodeData(opts.nodeId, { assetId, previewUrl: url });
       st.updateNode(opts.nodeId, { status: "done" });
     }
-    toast.success("静帧已生成");
+    toast.success("Still generated");
     return { assetId, url, cost: res.cost ?? undefined };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "生成失败";
+    const message = err instanceof Error ? err.message : "Generation failed";
     st.patchJob(job.id, { status: "error", error: message, updatedAt: Date.now() });
     if (opts.nodeId) st.updateNode(opts.nodeId, { status: "error", error: message });
     toast.error(message);
@@ -124,7 +124,7 @@ export async function generateMotion(opts: {
   const prompt = [opts.character.lockPrompt, opts.prompt].filter(Boolean).join(". ");
   const job = newJob({
     kind: "video",
-    title: `${opts.character.name} · 动态`,
+    title: `${opts.character.name} · motion`,
     model: opts.model,
     prompt,
     nodeId: opts.nodeId,
@@ -163,10 +163,10 @@ export async function generateMotion(opts: {
       cost = poll.cost ?? cost;
       if (status === "completed") break;
       if (status === "failed" || status === "cancelled" || status === "expired") {
-        throw new Error(poll.error || `视频任务 ${status}`);
+        throw new Error(poll.error || `Video job ${status}`);
       }
     }
-    if (status !== "completed") throw new Error("视频生成超时，请在队列里查看或重试");
+    if (status !== "completed") throw new Error("Video timed out — check the queue or retry");
     const content = await fetchVideoContentFn({
       data: { apiKey, jobId: submitted.jobId },
     });
@@ -182,7 +182,7 @@ export async function generateMotion(opts: {
     st.addGallery({
       id: uid("gal"),
       kind: "video",
-      title: `${opts.character.name} · 动态`,
+      title: `${opts.character.name} · motion`,
       prompt,
       model: opts.model,
       characterId: opts.character.id,
@@ -195,10 +195,10 @@ export async function generateMotion(opts: {
       st.patchNodeData(opts.nodeId, { assetId, previewUrl: url, jobId: submitted.jobId });
       st.updateNode(opts.nodeId, { status: "done" });
     }
-    toast.success("视频已生成");
+    toast.success("Video generated");
     return { assetId, url, cost };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "生成失败";
+    const message = err instanceof Error ? err.message : "Generation failed";
     st.patchJob(job.id, { status: "error", error: message, updatedAt: Date.now() });
     if (opts.nodeId) st.updateNode(opts.nodeId, { status: "error", error: message });
     toast.error(message);
@@ -234,7 +234,7 @@ export async function queueGraph() {
   if (st.queueRunning) return;
   if (!st.apiKey.trim()) {
     st.setView("settings");
-    toast.error("请先在设置里填写 OpenRouter API Key");
+    toast.error("Add an OpenRouter API key in Settings first");
     return;
   }
   st.setQueueRunning(true);
@@ -248,14 +248,14 @@ export async function queueGraph() {
         outputs.set(node.id, result);
         useStudio.getState().updateNode(node.id, { status: "done" });
       } catch (err) {
-        const message = err instanceof Error ? err.message : "节点失败";
+        const message = err instanceof Error ? err.message : "Node failed";
         useStudio.getState().updateNode(node.id, { status: "error", error: message });
         throw err;
       }
     }
-    toast.success("工作流执行完成");
+    toast.success("Workflow finished");
   } catch (err) {
-    const message = err instanceof Error ? err.message : "工作流失败";
+    const message = err instanceof Error ? err.message : "Workflow failed";
     toast.error(message);
   } finally {
     useStudio.getState().setQueueRunning(false);
@@ -288,7 +288,7 @@ async function runNode(
   if (node.kind === "character") {
     const id = (node.data as { characterId: string }).characterId;
     const c = st.characters.find((x) => x.id === id);
-    if (!c) throw new Error("未选择角色卡");
+    if (!c) throw new Error("No character card selected");
     return { imageUrl: c.refs[0] };
   }
   if (node.kind === "prompt") {
@@ -313,7 +313,7 @@ async function runNode(
     const charNode = st.nodes.find((n) => n.kind === "character");
     const cid = (charNode?.data as { characterId?: string } | undefined)?.characterId;
     const c = st.characters.find((x) => x.id === cid) ?? st.characters[0];
-    if (!c) throw new Error("需要角色卡");
+    if (!c) throw new Error("A character card is required");
     const prompt = gathered.text || d.prompt;
     const res = await generateStill({
       character: c,
@@ -331,9 +331,9 @@ async function runNode(
     const charNode = st.nodes.find((n) => n.kind === "character");
     const cid = (charNode?.data as { characterId?: string } | undefined)?.characterId;
     const c = st.characters.find((x) => x.id === cid) ?? st.characters[0];
-    if (!c) throw new Error("需要角色卡");
+    if (!c) throw new Error("A character card is required");
     const frame = gathered.imageUrl || c.refs[0];
-    if (!frame) throw new Error("图生视频需要首帧");
+    if (!frame) throw new Error("Image-to-video needs a first frame");
     const res = await generateMotion({
       character: c,
       prompt: d.prompt || gathered.text,

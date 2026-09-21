@@ -10,11 +10,11 @@ import { useStudio } from "@/lib/studio/store";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
-  { n: 1 as const, label: "角色" },
-  { n: 2 as const, label: "分镜" },
-  { n: 3 as const, label: "静帧" },
-  { n: 4 as const, label: "动态" },
-  { n: 5 as const, label: "成片" },
+  { n: 1 as const, label: "Cast" },
+  { n: 2 as const, label: "Shot" },
+  { n: 3 as const, label: "Still" },
+  { n: 4 as const, label: "Motion" },
+  { n: 5 as const, label: "Cut" },
 ];
 
 export function PipelineView() {
@@ -97,8 +97,8 @@ export function PipelineView() {
     if (!character) {
       return (
         <EmptyHint
-          title="还没有角色卡"
-          action="去角色库"
+          title="No character cards yet"
+          action="Open cast"
           onClick={() => setView("cast")}
         />
       );
@@ -180,7 +180,7 @@ export function PipelineView() {
             ))}
           </div>
           <Button className="hidden md:inline-flex" onClick={() => patch({ step: 3 })}>
-            下一步
+            Next
             <ArrowRight className="size-4" />
           </Button>
         </div>
@@ -190,7 +190,7 @@ export function PipelineView() {
       return (
         <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
           <div className="space-y-3">
-            <Field label="静帧提示词">
+            <Field label="Still prompt">
               <Textarea
                 rows={6}
                 value={pipeline.stillPrompt}
@@ -206,9 +206,9 @@ export function PipelineView() {
                 onClick={() => onExpand("still")}
               >
                 <Wand2 className="size-3.5" />
-                扩写
+                Expand
               </Button>
-              <Field label="画幅" className="w-32">
+              <Field label="Aspect" className="w-32">
                 <SelectNative
                   value={pipeline.aspect}
                   onChange={(e) => patch({ aspect: e.target.value })}
@@ -218,7 +218,7 @@ export function PipelineView() {
                   ))}
                 </SelectNative>
               </Field>
-              <Field label="图像模型" className="min-w-0 flex-1">
+              <Field label="Image model" className="min-w-0 flex-1">
                 <SelectNative
                   value={settings.imageModel}
                   onChange={(e) => patchSettings({ imageModel: e.target.value })}
@@ -237,10 +237,10 @@ export function PipelineView() {
               ) : (
                 <ImagePlus className="size-4" />
               )}
-              生成静帧
+              Generate still
             </Button>
           </div>
-          <StillPreview src={pipeline.stillPreviewUrl ?? character.refs[0]} label="参考 / 结果" />
+          <StillPreview src={pipeline.stillPreviewUrl ?? character.refs[0]} label="Reference / result" />
         </div>
       );
     }
@@ -248,7 +248,7 @@ export function PipelineView() {
       return (
         <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
           <div className="space-y-3">
-            <Field label="动作提示词">
+            <Field label="Motion prompt">
               <Textarea
                 rows={5}
                 value={pipeline.motionPrompt}
@@ -268,7 +268,7 @@ export function PipelineView() {
               ))}
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Field label="视频模型">
+              <Field label="Video model">
                 <SelectNative
                   value={settings.videoModel}
                   onChange={(e) => patchSettings({ videoModel: e.target.value })}
@@ -280,7 +280,7 @@ export function PipelineView() {
                   ))}
                 </SelectNative>
               </Field>
-              <Field label="时长">
+              <Field label="Duration">
                 <SelectNative
                   value={String(settings.defaultDuration)}
                   onChange={(e) =>
@@ -301,13 +301,13 @@ export function PipelineView() {
               ) : (
                 <Clapperboard className="size-4" />
               )}
-              图生视频
+              Image-to-video
             </Button>
             <p className="text-xs text-subtle">
-              将当前静帧作为首帧锁定角色。生成是异步任务，通常需要一到两分钟。
+              The current still is used as the first frame to lock the character. Generation is async and usually takes one to two minutes.
             </p>
           </div>
-          <StillPreview src={frame} label="首帧" />
+          <StillPreview src={frame} label="First frame" />
         </div>
       );
     }
@@ -321,7 +321,7 @@ export function PipelineView() {
               className="w-full rounded-lg border border-border bg-bg"
             />
           ) : (
-            <StillPreview src={pipeline.stillPreviewUrl} label="静帧" />
+            <StillPreview src={pipeline.stillPreviewUrl} label="Still" />
           )}
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             {pipeline.stillPreviewUrl ? (
@@ -330,7 +330,7 @@ export function PipelineView() {
                 download={`${character.name}-still.png`}
                 className="inline-flex h-11 items-center justify-center rounded-sm border border-border px-4 text-sm"
               >
-                下载静帧
+                Download still
               </a>
             ) : null}
             {pipeline.videoPreviewUrl ? (
@@ -339,13 +339,13 @@ export function PipelineView() {
                 download={`${character.name}-clip.mp4`}
                 className="inline-flex h-11 items-center justify-center rounded-sm bg-accent px-4 text-sm text-accent-fg"
               >
-                下载视频
+                Download video
               </a>
             ) : null}
           </div>
         </div>
         <div>
-          <h3 className="font-medium">B 站投稿清单</h3>
+          <h3 className="font-medium">Bilibili upload checklist</h3>
           <p className="mt-1 text-xs text-muted">{recipe.biliTip}</p>
           <ul className="mt-4 space-y-2">
             {BILI_CHECKLIST.map((c) => (
@@ -368,9 +368,9 @@ export function PipelineView() {
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
               Pipeline
             </p>
-            <h1 className="mt-1 font-display text-2xl tracking-tight md:text-3xl">二次创管线</h1>
+            <h1 className="mt-1 font-display text-2xl tracking-tight md:text-3xl">Fan-video pipeline</h1>
             <p className="mt-1 hidden max-w-xl text-sm text-muted md:block">
-              角色锁定 → 分镜 → 静帧 → 图生视频。对应 ComfyUI 里 Load Image / CLIP / KSampler / I2V。
+              Lock the cast → shot → still → image-to-video. Same jobs as Load Image / CLIP / KSampler / I2V in ComfyUI.
             </p>
           </div>
           <Segmented
@@ -386,10 +386,10 @@ export function PipelineView() {
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-8">
         {character ? (
           <p className="mb-4 text-sm text-muted">
-            当前角色 <span className="text-fg">{character.name}</span>
+            Cast <span className="text-fg">{character.name}</span>
             <span className="text-subtle"> · {character.game}</span>
-            {stillReady ? <Badge className="ml-2" tone="still">已有静帧</Badge> : null}
-            {videoReady ? <Badge className="ml-2" tone="motion">已有视频</Badge> : null}
+            {stillReady ? <Badge className="ml-2" tone="still">Has still</Badge> : null}
+            {videoReady ? <Badge className="ml-2" tone="motion">Has video</Badge> : null}
           </p>
         ) : null}
         {stepPanel}
@@ -398,7 +398,7 @@ export function PipelineView() {
         <div className="shrink-0 border-t border-hairline p-3 md:hidden">
           {pipeline.step === 2 ? (
             <Button className="w-full" onClick={() => patch({ step: 3 })}>
-              下一步
+              Next
               <ArrowRight className="size-4" />
             </Button>
           ) : null}
@@ -409,7 +409,7 @@ export function PipelineView() {
               ) : (
                 <ImagePlus className="size-4" />
               )}
-              生成静帧
+              Generate still
             </Button>
           ) : null}
           {pipeline.step === 4 ? (
@@ -419,7 +419,7 @@ export function PipelineView() {
               ) : (
                 <Clapperboard className="size-4" />
               )}
-              图生视频
+              Image-to-video
             </Button>
           ) : null}
         </div>
@@ -434,7 +434,7 @@ function StillPreview({ src, label }: { src?: string; label: string }) {
       {src ? (
         <img src={src} alt="" className="aspect-[3/4] max-h-80 w-full object-cover md:aspect-[2/3] md:max-h-none" />
       ) : (
-        <div className="grid aspect-[2/3] place-items-center text-sm text-subtle">无预览</div>
+        <div className="grid aspect-[2/3] place-items-center text-sm text-subtle">No preview</div>
       )}
       <figcaption className="border-t border-hairline px-3 py-2 text-xs text-muted">
         {label}

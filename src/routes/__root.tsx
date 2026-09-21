@@ -17,7 +17,7 @@ export const Route = createRootRoute({
       { name: "mobile-web-app-capable", content: "yes" },
       {
         name: "description",
-        content: "二次元手游角色 AI 视频二创工作室 — 角色锁定、立绘、图生视频。",
+        content: "Anime character video studio — lock a cast, generate stills, then image-to-video.",
       },
     ],
     links: [
@@ -34,7 +34,7 @@ export const Route = createRootRoute({
     ],
   }),
   component: () => (
-    <html lang="zh-Hans" className="antialiased" suppressHydrationWarning>
+    <html lang="en" className="antialiased" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

@@ -22,10 +22,10 @@ export function SettingsView() {
     try {
       const res = await pingKeyFn({ data: { apiKey: draft } });
       setApiKey(draft.trim());
-      setInfo(`已连接${res.label ? ` · ${res.label}` : ""}`);
-      toast.success("OpenRouter 连接成功");
+      setInfo(`Connected${res.label ? ` · ${res.label}` : ""}`);
+      toast.success("OpenRouter connected");
     } catch (err) {
-      const m = err instanceof Error ? err.message : "连接失败";
+      const m = err instanceof Error ? err.message : "Could not connect";
       setInfo(null);
       toast.error(m);
     } finally {
@@ -42,7 +42,7 @@ export function SettingsView() {
           </p>
           <h1 className="mt-1 font-display text-2xl tracking-tight md:text-3xl">OpenRouter</h1>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            Key 只存在你的浏览器里，请求经工作室服务端转发到 OpenRouter。生成会消耗你账号的额度。
+            The key stays in this browser. Requests are proxied to OpenRouter and billed to your account.
           </p>
         </div>
         <Field label="API Key">
@@ -56,7 +56,7 @@ export function SettingsView() {
         </Field>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Button className="w-full sm:w-auto" onClick={() => void test()} disabled={busy || !draft.trim()}>
-            {busy ? "检测中…" : "保存并检测"}
+            {busy ? "Checking…" : "Save and test"}
           </Button>
           <Button
             variant="ghost"
@@ -67,13 +67,13 @@ export function SettingsView() {
               setInfo(null);
             }}
           >
-            清除
+            Clear
           </Button>
           {info ? <span className="text-xs text-ok">{info}</span> : null}
         </div>
 
         <div className="grid gap-3">
-          <Field label="默认图像模型">
+          <Field label="Default image model">
             <SelectNative
               value={settings.imageModel}
               onChange={(e) => patch({ imageModel: e.target.value })}
@@ -85,7 +85,7 @@ export function SettingsView() {
               ))}
             </SelectNative>
           </Field>
-          <Field label="默认视频模型">
+          <Field label="Default video model">
             <SelectNative
               value={settings.videoModel}
               onChange={(e) => patch({ videoModel: e.target.value })}
@@ -97,7 +97,7 @@ export function SettingsView() {
               ))}
             </SelectNative>
           </Field>
-          <Field label="提示词扩写模型">
+          <Field label="Prompt expand model">
             <SelectNative
               value={settings.textModel}
               onChange={(e) => patch({ textModel: e.target.value })}
@@ -110,7 +110,7 @@ export function SettingsView() {
             </SelectNative>
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="静帧分辨率">
+            <Field label="Still resolution">
               <SelectNative
                 value={settings.defaultResolution}
                 onChange={(e) => patch({ defaultResolution: e.target.value })}
@@ -120,7 +120,7 @@ export function SettingsView() {
                 ))}
               </SelectNative>
             </Field>
-            <Field label="视频分辨率">
+            <Field label="Video resolution">
               <SelectNative
                 value={settings.videoResolution}
                 onChange={(e) => patch({ videoResolution: e.target.value })}
@@ -133,11 +133,11 @@ export function SettingsView() {
           </div>
         </div>
         <p className="text-xs leading-relaxed text-subtle">
-          在 openrouter.ai 创建密钥后粘贴到上方。图像走 /api/v1/images，视频走异步 /api/v1/videos。手机浏览器可把本页加到主屏幕，操作更接近独立 App。
+          Create a key at openrouter.ai and paste it above. Images use /api/v1/images; video is async /api/v1/videos. On a phone, add this page to the home screen for an app-like shell.
         </p>
         <Button variant="outline" className="w-full md:hidden" onClick={() => setView("playbook")}>
           <BookOpen className="size-4" />
-          打开二创手册
+          Open the playbook
         </Button>
       </div>
     </div>

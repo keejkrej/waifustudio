@@ -17,7 +17,7 @@ export function formatCost(n?: number | null): string {
 
 export function formatTime(ts: number): string {
   const d = new Date(ts);
-  return d.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
 export async function blobToDataUrl(blob: Blob): Promise<string> {
@@ -32,9 +32,9 @@ export async function blobToDataUrl(blob: Blob): Promise<string> {
 export async function urlToDataUrl(src: string): Promise<string> {
   if (src.startsWith("data:")) return src;
   const res = await fetch(src);
-  if (!res.ok) throw new Error("无法读取参考图");
+  if (!res.ok) throw new Error("Could not read the reference image");
   const blob = await res.blob();
-  if (blob.size > 8 * 1024 * 1024) throw new Error("图片超过 8MB，请压缩后重试");
+  if (blob.size > 8 * 1024 * 1024) throw new Error("Image is over 8MB — compress it and try again");
   return blobToDataUrl(blob);
 }
 

@@ -8,7 +8,7 @@ export function QueueBar() {
   if (!latest.length) {
     return (
       <div className="hidden h-9 shrink-0 items-center border-t border-hairline px-4 text-xs text-subtle md:flex">
-        Queue 空闲 · 生成记录会出现在这里
+        Queue idle · jobs will show up here
       </div>
     );
   }

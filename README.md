@@ -1,44 +1,44 @@
 # WaifuStudio
 
-二次元手游角色 AI 视频二创工作室。角色卡锁定外形，生成静帧，再图生视频。对照 ComfyUI 里 Load Image / CLIP / KSampler / I2V 的流程，云端走 [OpenRouter](https://openrouter.ai)。
+Anime mobile-game character video studio. Lock a character card, generate a still, then image-to-video. The flow mirrors ComfyUI (Load Image / CLIP / KSampler / I2V) and runs on [OpenRouter](https://openrouter.ai).
 
-手机端是底部 Tab + 安全区的 App 式布局；桌面端是侧栏 + 节点画布。
+Phone layout is an app-style tab bar with safe areas. Desktop is a sidebar plus a node canvas.
 
-## 功能
+## Features
 
-- **流程**：角色 → 分镜配方 → 静帧 → 图生视频 → 成片 / B 站投稿清单
-- **节点**：ComfyUI 式工作流。桌面可连线跑 Queue Prompt；手机上是卡片列表
-- **角色库**：立绘参考图 + 锁定提示词（文本侧的 IP-Adapter）
-- **图库**：生图/生视频结果存在本机 IndexedDB
-- **OpenRouter**：Key 只存在浏览器 `localStorage`，经服务端转发，不进仓库
+- **Pipeline:** cast → shot recipe → still → image-to-video → cut / Bilibili checklist
+- **Graph:** ComfyUI-style workflow. Wire nodes on desktop; edit a card stack on phone
+- **Cast:** reference portraits plus a lock prompt (text-side IP-Adapter)
+- **Gallery:** stills and clips stored in IndexedDB on this device
+- **OpenRouter:** the API key stays in `localStorage` and is proxied by the server — never committed
 
-示例角色均为原创，不对应任何现有游戏 IP。
+Sample characters are original. They are not existing game IP.
 
-## 本地运行
+## Run locally
 
-需要 Node 22。
+Requires Node 22.
 
 ```bash
 npm install
 npm run dev
 ```
 
-浏览器打开提示的地址（默认 `http://localhost:8080`）。到 **设置** 粘贴 OpenRouter API Key，再走流程或执行节点。
+Open the URL Vite prints (default `http://localhost:8080`). Paste an OpenRouter API key in **Settings**, then run the pipeline or queue the graph.
 
 ```bash
 npm run typecheck
 npm run build
 ```
 
-## 使用
+## Usage
 
-1. 选角色卡，或上传自己的立绘 / 截图
-2. 选配方（立绘呼吸 / 战斗 / 日常竖屏 / OP）
-3. 出静帧，把首帧送进图生视频
-4. 需要精细控制时切到 **节点** 改模型、画幅、提示词
+1. Pick a character card, or upload your own portrait / screenshot
+2. Choose a recipe (idle breath / battle / vertical daily / OP)
+3. Generate a still, then send the first frame into image-to-video
+4. Switch to **Graph** when you want finer control over models, aspect, and prompts
 
-图像默认走 Nano Banana / Seedream / FLUX / Grok Imagine；视频走 Seedance / Wan / Veo / Hailuo / Grok Imagine Video，可在设置里改。
+Default image models: Nano Banana, Seedream, FLUX, Grok Imagine. Default video: Seedance, Wan, Veo, Hailuo, Grok Imagine Video. Change them in Settings.
 
-## 技术栈
+## Stack
 
 TanStack Start · React 19 · Tailwind v4 · Zustand · IndexedDB

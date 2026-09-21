@@ -39,7 +39,7 @@ async function orFetch(
     });
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
-      throw new Error("请求超时，请稍后重试或换更快的模型");
+      throw new Error("Request timed out — retry or pick a faster model");
     }
     throw err;
   } finally {
@@ -62,7 +62,7 @@ export const generateImageFn = createServerFn({ method: "POST" })
   .validator((d: GenerateImageInput) => d)
   .handler(async ({ data }) => {
     const key = data.apiKey.trim();
-    if (!key) throw new Error("请先填写 OpenRouter API Key");
+    if (!key) throw new Error("Add an OpenRouter API key first");
     const body: Record<string, unknown> = {
       model: data.model,
       prompt: data.prompt,
@@ -89,7 +89,7 @@ export const generateImageFn = createServerFn({ method: "POST" })
       usage?: { cost?: number };
     };
     const first = json.data?.[0];
-    if (!first?.b64_json && !first?.url) throw new Error("模型没有返回图像");
+    if (!first?.b64_json && !first?.url) throw new Error("The model did not return an image");
     let b64 = first.b64_json ?? "";
     let mime = first.media_type ?? "image/png";
     if (!b64 && first.url) {
@@ -118,7 +118,7 @@ export const submitVideoFn = createServerFn({ method: "POST" })
   .validator((d: SubmitVideoInput) => d)
   .handler(async ({ data }) => {
     const key = data.apiKey.trim();
-    if (!key) throw new Error("请先填写 OpenRouter API Key");
+    if (!key) throw new Error("Add an OpenRouter API key first");
     const body: Record<string, unknown> = {
       model: data.model,
       prompt: data.prompt,
@@ -156,7 +156,7 @@ export const submitVideoFn = createServerFn({ method: "POST" })
     });
     if (!res.ok) throw new Error(await readError(res));
     const json = (await res.json()) as { id?: string; status?: string };
-    if (!json.id) throw new Error("视频任务未返回 job id");
+    if (!json.id) throw new Error("Video job did not return an id");
     return { jobId: json.id, status: json.status ?? "pending" };
   });
 
@@ -166,7 +166,7 @@ export const pollVideoFn = createServerFn({ method: "POST" })
   .validator((d: PollVideoInput) => d)
   .handler(async ({ data }) => {
     const key = data.apiKey.trim();
-    if (!key) throw new Error("请先填写 OpenRouter API Key");
+    if (!key) throw new Error("Add an OpenRouter API key first");
     const res = await orFetch(key, `/videos/${encodeURIComponent(data.jobId)}`, {
       method: "GET",
       timeoutMs: 30_000,
@@ -193,7 +193,7 @@ export const fetchVideoContentFn = createServerFn({ method: "POST" })
   .validator((d: PollVideoInput) => d)
   .handler(async ({ data }) => {
     const key = data.apiKey.trim();
-    if (!key) throw new Error("请先填写 OpenRouter API Key");
+    if (!key) throw new Error("Add an OpenRouter API key first");
     const res = await orFetch(
       key,
       `/videos/${encodeURIComponent(data.jobId)}/content?index=0`,
@@ -217,7 +217,7 @@ export const expandPromptFn = createServerFn({ method: "POST" })
   .validator((d: ExpandPromptInput) => d)
   .handler(async ({ data }) => {
     const key = data.apiKey.trim();
-    if (!key) throw new Error("请先填写 OpenRouter API Key");
+    if (!key) throw new Error("Add an OpenRouter API key first");
     const sys =
       data.kind === "motion"
         ? "You write concise English motion prompts for anime image-to-video. 1-3 sentences. Camera, body action, hair/cloth, constraints (no morph, keep identity). No quotes."
@@ -242,7 +242,7 @@ export const expandPromptFn = createServerFn({ method: "POST" })
       choices?: Array<{ message?: { content?: string } }>;
     };
     const text = json.choices?.[0]?.message?.content?.trim();
-    if (!text) throw new Error("扩写没有返回内容");
+    if (!text) throw new Error("Expand returned no text");
     return { text };
   });
 
@@ -250,7 +250,7 @@ export const pingKeyFn = createServerFn({ method: "POST" })
   .validator((d: { apiKey: string }) => d)
   .handler(async ({ data }) => {
     const key = data.apiKey.trim();
-    if (!key) throw new Error("请先填写 OpenRouter API Key");
+    if (!key) throw new Error("Add an OpenRouter API key first");
     const res = await orFetch(key, "/key", { method: "GET", timeoutMs: 20_000 });
     if (!res.ok) throw new Error(await readError(res));
     const json = (await res.json()) as {

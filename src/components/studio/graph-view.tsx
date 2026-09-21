@@ -196,7 +196,7 @@ export function GraphView() {
             <div className="ml-auto flex gap-1">
               <Button size="sm" variant="outline" onClick={resetGraph}>
                 <RotateCcw className="size-3.5" />
-                重置
+                Reset
               </Button>
               <Button size="sm" disabled={queueRunning} onClick={() => void queueGraph()}>
                 <Play className="size-3.5" />
@@ -287,12 +287,12 @@ export function GraphView() {
               ) : null}
               <p className="font-mono text-[11px] text-subtle">{selected.id}</p>
               <p className="text-xs leading-relaxed text-muted">
-                从输出点拖到输入点连线。点连线可删除。滚轮缩放，Alt 拖动画布。Queue Prompt
-                按拓扑顺序执行，等同 ComfyUI 的跑图。
+                Drag from an output port to an input to wire. Click a wire to delete. Scroll to zoom, Alt-drag the canvas.
+                Queue Prompt runs in topological order, same as ComfyUI.
               </p>
             </div>
           ) : (
-            <p className="mt-3 text-sm text-muted">点选一个节点以查看详情。</p>
+            <p className="mt-3 text-sm text-muted">Select a node to inspect it.</p>
           )}
         </aside>
       </div>
@@ -325,11 +325,11 @@ function MobileGraphStack({
         <div className="flex gap-2">
           <Button className="flex-1" disabled={queueRunning} onClick={() => void queueGraph()}>
             <Play className="size-4" />
-            执行工作流
+            Run workflow
           </Button>
           <Button variant="outline" onClick={onReset}>
             <RotateCcw className="size-4" />
-            重置
+            Reset
           </Button>
         </div>
         <div className="flex gap-1 overflow-x-auto pb-1">
@@ -340,7 +340,7 @@ function MobileGraphStack({
             </Button>
           ))}
         </div>
-        <p className="text-xs text-subtle">按卡片顺序执行。大屏可打开节点画布连线。</p>
+        <p className="text-xs text-subtle">Runs in card order. On a large screen you can open the canvas and wire nodes.</p>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         <ol className="space-y-3">
@@ -373,14 +373,14 @@ function MobileGraphStack({
                       onClick={() => onRemove(node.id)}
                     >
                       <Trash2 className="size-3.5" />
-                      <span className="sr-only">删除节点</span>
+                      <span className="sr-only">Delete node</span>
                     </button>
                   </div>
                 </div>
                 <div className="space-y-2 p-3">
                   {incoming.length ? (
                     <p className="text-[11px] text-subtle">
-                      输入：
+                      In: 
                       {incoming
                         .map((e) => nodes.find((n) => n.id === e.from))
                         .filter(Boolean)
@@ -423,7 +423,7 @@ function defaultData(kind: NodeKind): GraphNode["data"] {
       aspectRatio: s.videoAspect,
       generateAudio: false,
     };
-  return { label: "输出" };
+  return { label: "Output" };
 }
 
 function GraphNodeCard({
@@ -581,7 +581,7 @@ function NodeBody({
         {d.previewUrl ? (
           <img src={d.previewUrl} alt="" className="h-24 w-full rounded-sm object-cover" />
         ) : (
-          <p className="text-[11px] text-subtle">等待 Queue</p>
+          <p className="text-[11px] text-subtle">Waiting on queue</p>
         )}
       </div>
     );
@@ -619,6 +619,6 @@ function NodeBody({
       <img src={d.previewUrl} alt="" className="h-28 w-full rounded-sm object-cover" />
     )
   ) : (
-    <p className="text-[11px] text-subtle">连接图像或视频</p>
+    <p className="text-[11px] text-subtle">Wire an image or video</p>
   );
 }

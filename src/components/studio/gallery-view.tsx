@@ -26,12 +26,12 @@ export function GalleryView() {
   return (
     <div className="h-full overflow-y-auto p-4 md:p-6">
       <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted">Gallery</p>
-      <h1 className="mt-1 font-display text-2xl tracking-tight md:text-3xl">图库</h1>
+      <h1 className="mt-1 font-display text-2xl tracking-tight md:text-3xl">Gallery</h1>
       <p className="mt-1 hidden max-w-lg text-sm text-muted md:block">
-        生成结果保存在本机。示例静帧可直接预览；用 API 生成的视频会写入本地图库。
+        Results stay on this device. The sample still is ready to preview; API clips land in the local gallery.
       </p>
       {gallery.length === 0 ? (
-        <p className="mt-8 text-sm text-muted">还没有成片。</p>
+        <p className="mt-8 text-sm text-muted">No cuts yet.</p>
       ) : (
         <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
           {gallery.map((g) => {
@@ -48,14 +48,14 @@ export function GalleryView() {
                     <img src={g.thumbUrl} alt="" className="size-full object-cover" />
                   ) : (
                     <div className="grid size-full place-items-center text-xs text-subtle">
-                      无预览
+                      No preview
                     </div>
                   )}
                   <Badge
                     tone={g.kind === "video" ? "motion" : "still"}
                     className="absolute left-2 top-2 bg-bg/80"
                   >
-                    {g.kind === "video" ? "视频" : "静帧"}
+                    {g.kind === "video" ? "Video" : "Still"}
                   </Badge>
                 </div>
                 <figcaption className="space-y-1 p-3">
@@ -64,7 +64,7 @@ export function GalleryView() {
                     {c?.name ?? "—"} · {g.model}
                   </p>
                   <p className="flex items-center justify-between text-[11px] text-subtle">
-                    <span>{g.createdAt > 0 ? formatTime(g.createdAt) : "示例"}</span>
+                    <span>{g.createdAt > 0 ? formatTime(g.createdAt) : "Sample"}</span>
                     <span>{formatCost(g.cost)}</span>
                   </p>
                   <div className="flex gap-1 pt-1">
@@ -75,7 +75,7 @@ export function GalleryView() {
                       onClick={() => void save(g)}
                     >
                       <Download className="size-3.5" />
-                      下载
+                      Download
                     </Button>
                     {g.createdAt ? (
                       <Button size="icon" variant="ghost" className="md:size-9" onClick={() => remove(g.id)}>
