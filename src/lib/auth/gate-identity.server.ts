@@ -27,7 +27,8 @@ export type GateJwks = { keys: JWK[] };
 export type JwksFetch = (url: string) => Promise<GateJwks | null>;
 
 export function gateIdentityEnabled(): boolean {
-  return env("VITE_AUTH_ENABLED") !== "false";
+  const flag = env("NEXT_PUBLIC_AUTH_ENABLED") ?? env("VITE_AUTH_ENABLED");
+  return flag !== "false";
 }
 
 export function gateTokenAudience(): string {

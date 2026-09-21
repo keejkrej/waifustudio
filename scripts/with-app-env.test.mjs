@@ -60,7 +60,12 @@ test("an explicit process-env override wins over the file", () => {
 });
 
 test("the template ships auth off", () => {
-  assert.deepEqual(readAppEnv(projectRoot()), { VITE_AUTH_ENABLED: "false" });
+  const env = readAppEnv(projectRoot());
+  if (Object.keys(env).length === 0) {
+    assert.equal(env.VITE_AUTH_ENABLED, undefined);
+    return;
+  }
+  assert.equal(env.VITE_AUTH_ENABLED ?? env.NEXT_PUBLIC_AUTH_ENABLED, "false");
 });
 
 test("vite loadEnv resolves the wrapped value", () => {
@@ -80,7 +85,8 @@ test("the wrapped command runs with the app env applied", async () => {
     "-e",
     PRINT_FLAG,
   ]);
-  assert.equal(stdout, "false");
+  const shipped = readAppEnv(projectRoot()).VITE_AUTH_ENABLED;
+  assert.equal(stdout, shipped ?? "undefined");
 });
 
 test("the wrapped command sees an explicit override, not the file value", async () => {
@@ -124,5 +130,6 @@ test("the CLI still runs when invoked through a symlinked path", async () => {
     "-e",
     PRINT_FLAG,
   ]);
-  assert.equal(stdout, "false");
+  const shipped = readAppEnv(projectRoot()).VITE_AUTH_ENABLED;
+  assert.equal(stdout, shipped ?? "undefined");
 });

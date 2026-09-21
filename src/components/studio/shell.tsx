@@ -1,3 +1,5 @@
+"use client";
+
 import {
   BookOpen,
   Clapperboard,
@@ -8,7 +10,9 @@ import {
   Users,
   Workflow,
 } from "lucide-react";
-import { Toaster } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useStudio } from "@/lib/studio/store";
 import type { ViewId } from "@/lib/studio/types";
@@ -39,78 +43,76 @@ export function StudioShell() {
   const running = useStudio((s) => s.queueRunning);
 
   return (
-    <div className="flex h-dvh min-h-0 flex-col overflow-x-hidden bg-bg text-fg">
-      <div className="shrink-0 border-b border-hairline pt-safe">
+    <div className="flex h-dvh min-h-0 flex-col overflow-x-hidden bg-background text-foreground">
+      <div className="shrink-0 border-b pt-safe">
         <header className="flex h-12 items-center gap-3 px-3 md:h-14 md:px-4">
-          <button
+          <Button
             type="button"
-            className="flex min-h-11 items-center gap-2.5"
+            variant="ghost"
+            className="h-11 gap-2.5 px-1"
             onClick={() => setView("pipeline")}
           >
-            <span className="grid size-8 place-items-center rounded-sm border border-border bg-elevated">
-              <Clapperboard className="size-4 text-accent" />
+            <span className="grid size-8 place-items-center border bg-card">
+              <Clapperboard className="size-4" />
             </span>
-            <span className="leading-none">
-              <span className="block font-display text-lg italic tracking-tight">Waifu</span>
-              <span className="block text-[10px] font-medium uppercase tracking-[0.22em] text-muted">
+            <span className="leading-none text-left">
+              <span className="block text-sm font-medium tracking-tight">Waifu</span>
+              <span className="block text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
                 Studio
               </span>
             </span>
-          </button>
+          </Button>
           <div className="hidden items-center gap-1 md:flex lg:hidden">
             {NAV.map((n) => (
-              <button
+              <Button
                 key={n.id}
                 type="button"
+                variant={view === n.id ? "secondary" : "ghost"}
+                size="sm"
                 onClick={() => setView(n.id)}
-                className={cn(
-                  "inline-flex h-11 items-center gap-2 rounded-sm px-3 text-sm transition-colors duration-150",
-                  view === n.id ? "bg-elevated text-fg" : "text-muted hover:text-fg",
-                )}
               >
                 <n.icon className="size-3.5" />
                 {n.label}
-              </button>
+              </Button>
             ))}
           </div>
           <div className="ml-auto flex items-center gap-2">
             {running ? (
-              <span className="inline-flex items-center gap-1.5 text-xs text-motion">
+              <Badge variant="outline" className="gap-1.5">
                 <Sparkles className="size-3.5 animate-pulse" />
                 <span className="hidden sm:inline">Queue</span>
-              </span>
+              </Badge>
             ) : null}
-            <button
+            <Button
               type="button"
+              variant={key ? "secondary" : "outline"}
+              size="sm"
+              className="h-11 min-h-11 md:h-8 md:min-h-8"
               onClick={() => setView("settings")}
-              className={cn(
-                "inline-flex h-11 min-h-11 items-center rounded-full border px-3 text-[11px] font-medium md:h-8 md:min-h-8 md:px-3",
-                key ? "border-ok/40 text-ok" : "border-warn/40 text-warn",
-              )}
             >
               <span className="sm:hidden">{key ? "Key" : "No key"}</span>
-              <span className="hidden sm:inline">{key ? "OpenRouter connected" : "Add API key"}</span>
-            </button>
+              <span className="hidden sm:inline">
+                {key ? "OpenRouter connected" : "Add API key"}
+              </span>
+            </Button>
           </div>
         </header>
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-[72px] shrink-0 flex-col items-center gap-1 border-r border-hairline py-3 lg:flex">
+        <aside className="hidden w-[72px] shrink-0 flex-col items-center gap-1 border-r py-3 lg:flex">
           {NAV.map((n) => (
-            <button
+            <Button
               key={n.id}
               type="button"
               title={n.label}
+              variant={view === n.id ? "secondary" : "ghost"}
+              className="size-11 flex-col gap-0.5 text-[10px]"
               onClick={() => setView(n.id)}
-              className={cn(
-                "flex size-11 flex-col items-center justify-center gap-0.5 rounded-sm text-[10px] transition-colors duration-150",
-                view === n.id ? "bg-elevated text-fg" : "text-muted hover:text-fg",
-              )}
             >
               <n.icon className="size-4" />
               {n.label}
-            </button>
+            </Button>
           ))}
         </aside>
         <main className="min-h-0 min-w-0 flex-1 overflow-hidden">
@@ -125,7 +127,7 @@ export function StudioShell() {
 
       <QueueBar />
 
-      <nav className="z-20 grid h-tabbar grid-cols-5 border-t border-hairline bg-surface select-none md:hidden">
+      <nav className="z-20 grid h-tabbar grid-cols-5 border-t bg-card select-none md:hidden">
         {MOBILE_NAV.map((n) => {
           const active = view === n.id || (n.id === "settings" && view === "playbook");
           return (
@@ -135,11 +137,11 @@ export function StudioShell() {
               onClick={() => setView(n.id)}
               className={cn(
                 "relative flex min-h-11 flex-col items-center justify-center gap-0.5 text-[11px] font-medium",
-                active ? "text-fg" : "text-muted",
+                active ? "text-foreground" : "text-muted-foreground",
               )}
             >
               {active ? (
-                <span className="absolute top-0 h-0.5 w-6 rounded-full bg-accent" />
+                <span className="absolute top-0 h-0.5 w-6 rounded-full bg-primary" />
               ) : null}
               <n.icon className="size-5" />
               {n.label}
@@ -148,12 +150,7 @@ export function StudioShell() {
         })}
       </nav>
       <Welcome />
-      <Toaster
-        theme="dark"
-        position="top-center"
-        offset="calc(env(safe-area-inset-top, 0px) + 12px)"
-        richColors={false}
-      />
+      <Separator className="sr-only" />
     </div>
   );
 }

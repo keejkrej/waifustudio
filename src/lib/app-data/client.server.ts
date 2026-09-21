@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequest } from "../request-context.ts";
 import {
   assertSameSiteRequest,
   CrossSiteRequestError,
@@ -327,7 +327,7 @@ function nonPostBlockedResult(): CallToolResult | null {
     data: null,
     errorMessage:
       `blocked ${req.method} inbound request: connector calls must run inside ` +
-      'a createServerFn({ method: "POST" }) handler',
+      'a POST Route Handler',
   };
 }
 

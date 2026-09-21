@@ -30,9 +30,9 @@
  * a verified id via `@/lib/auth/middleware`.
  */
 import { betterAuth } from "better-auth";
+import { nextCookies } from "better-auth/next-js";
 import { bearer, genericOAuth } from "better-auth/plugins";
-import { tanstackStartCookies } from "better-auth/tanstack-start";
-import { getCookie } from "@tanstack/react-start/server";
+import { cookies } from "next/headers";
 import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { ensureDbReady, getPglite } from "../db";
@@ -70,9 +70,10 @@ const env = (key: string): string | undefined => {
   return value ? value : undefined;
 };
 
-// Explicit off-switch. The deployer sets `VITE_AUTH_ENABLED=true` when it
-// provisions auth; set it to "false" to force auth off everywhere (dev user).
-const authDisabled = env("VITE_AUTH_ENABLED") === "false";
+// Explicit off-switch. Prefer Next.js public flag; keep VITE_ as a fallback
+// for `.grok/app-env.json` in the Grok sandbox.
+const authFlag = env("NEXT_PUBLIC_AUTH_ENABLED") ?? env("VITE_AUTH_ENABLED");
+const authDisabled = authFlag === "false";
 
 // Broker federation creds: the deployer injects a per-app client when deployed;
 // otherwise fall back to the shared live-preview client, which the broker accepts
@@ -102,6 +103,8 @@ const LOCAL_DEV_ORIGINS: string[] = [
   "http://localhost:8080",
   "http://127.0.0.1:8080",
   "http://[::1]:8080",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
 ];
 const baseURL = explicitBaseURL ?? {
   // Include loopback hosts so dynamic baseURL resolves for local email/password
@@ -246,14 +249,17 @@ export const auth = betterAuth({
     // (deployed apps) is unaffected.
     bearer(),
 
-    // Bridges Better Auth's Set-Cookie into TanStack Start responses. MUST be
-    // last so it runs after every other plugin's hooks.
-    tanstackStartCookies(),
+    // Bridges Better Auth's Set-Cookie into Next.js cookies(). MUST be last.
+    nextCookies(),
   ],
 });
 
-export function readSessionToken(): string | null {
-  return getCookie(SESSION_TOKEN_COOKIE) ?? null;
+export async function readSessionToken(): Promise<string | null> {
+  try {
+    return (await cookies()).get(SESSION_TOKEN_COOKIE)?.value ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // Re-exported for convenience; the array lives in the dependency-free

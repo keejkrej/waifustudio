@@ -1,14 +1,38 @@
-import { useCallback, useRef, useState } from "react";
+"use client";
+
+import { useCallback, useMemo } from "react";
+import {
+  ReactFlowProvider,
+  Handle,
+  Position,
+  type Connection,
+  type Edge,
+  type Node,
+  type NodeProps,
+  type NodeTypes,
+  type OnNodesChange,
+} from "@xyflow/react";
 import { Play, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input, SelectNative, Textarea } from "@/components/ui/field";
-import { bezierPath, NODE_META, NODE_PORTS, canConnect } from "@/lib/studio/graph";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Canvas } from "@/components/ai-elements/canvas";
+import { Controls } from "@/components/ai-elements/controls";
+import {
+  Node as FlowNode,
+  NodeAction,
+  NodeContent,
+  NodeHeader,
+  NodeTitle,
+} from "@/components/ai-elements/node";
+import { Panel } from "@/components/ai-elements/panel";
+import { NODE_META, NODE_PORTS, canConnect } from "@/lib/studio/graph";
 import { IMAGE_MODELS, VIDEO_MODELS } from "@/lib/studio/models";
 import { queueGraph } from "@/lib/studio/execute";
 import { useStudio } from "@/lib/studio/store";
 import type {
   CharacterNodeData,
-  GraphEdge,
   GraphNode,
   ImageNodeData,
   NodeKind,
@@ -16,389 +40,10 @@ import type {
   PromptNodeData,
   VideoNodeData,
 } from "@/lib/studio/types";
-import { cn, uid } from "@/lib/utils";
+import { uid } from "@/lib/utils";
+import { SelectField } from "./fields";
 
-interface DragWire {
-  from: string;
-  fromPort: string;
-  x: number;
-  y: number;
-  mx: number;
-  my: number;
-}
-
-export function GraphView() {
-  const nodes = useStudio((s) => s.nodes);
-  const edges = useStudio((s) => s.edges);
-  const selectedId = useStudio((s) => s.selectedId);
-  const cam = useStudio((s) => s.cam);
-  const characters = useStudio((s) => s.characters);
-  const queueRunning = useStudio((s) => s.queueRunning);
-
-  const setSelected = useStudio((s) => s.setSelected);
-  const updateNode = useStudio((s) => s.updateNode);
-  const addNode = useStudio((s) => s.addNode);
-  const addEdge = useStudio((s) => s.addEdge);
-  const removeEdge = useStudio((s) => s.removeEdge);
-  const removeNode = useStudio((s) => s.removeNode);
-  const resetGraph = useStudio((s) => s.resetGraph);
-  const setCam = useStudio((s) => s.setCam);
-  const patchNodeData = useStudio((s) => s.patchNodeData);
-
-  const surface = useRef<HTMLDivElement>(null);
-  const [wire, setWire] = useState<DragWire | null>(null);
-  const pan = useRef<{ ox: number; oy: number; cx: number; cy: number } | null>(null);
-  const drag = useRef<{ id: string; ox: number; oy: number; nx: number; ny: number } | null>(null);
-
-  const toGraph = useCallback(
-    (clientX: number, clientY: number) => {
-      const el = surface.current;
-      if (!el) return { x: 0, y: 0 };
-      const r = el.getBoundingClientRect();
-      return {
-        x: (clientX - r.left - cam.x) / cam.k,
-        y: (clientY - r.top - cam.y) / cam.k,
-      };
-    },
-    [cam],
-  );
-
-  function portPos(node: GraphNode, portId: string, side: "in" | "out") {
-    const meta = NODE_META[node.kind];
-    const ports = side === "in" ? NODE_PORTS[node.kind].inputs : NODE_PORTS[node.kind].outputs;
-    const i = Math.max(0, ports.findIndex((p) => p.id === portId));
-    const y = node.y + 54 + i * 22;
-    const x = side === "out" ? node.x + meta.w : node.x;
-    return { x, y };
-  }
-
-  function onWheel(e: React.WheelEvent) {
-    e.preventDefault();
-    const el = surface.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const mx = e.clientX - r.left;
-    const my = e.clientY - r.top;
-    const factor = e.deltaY > 0 ? 0.92 : 1.08;
-    const k = Math.min(1.8, Math.max(0.4, cam.k * factor));
-    const x = mx - ((mx - cam.x) / cam.k) * k;
-    const y = my - ((my - cam.y) / cam.k) * k;
-    setCam({ k, x, y });
-  }
-
-  function onPointerDown(e: React.PointerEvent) {
-    if (e.button === 1 || e.button === 2 || (e.button === 0 && e.altKey)) {
-      pan.current = { ox: e.clientX, oy: e.clientY, cx: cam.x, cy: cam.y };
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    } else if (e.target === e.currentTarget) {
-      setSelected(null);
-    }
-  }
-
-  function onPointerMove(e: React.PointerEvent) {
-    if (pan.current) {
-      setCam({
-        x: pan.current.cx + (e.clientX - pan.current.ox),
-        y: pan.current.cy + (e.clientY - pan.current.oy),
-      });
-    }
-    if (drag.current) {
-      const g = toGraph(e.clientX, e.clientY);
-      updateNode(drag.current.id, {
-        x: g.x - drag.current.ox,
-        y: g.y - drag.current.oy,
-      });
-    }
-    if (wire) {
-      const g = toGraph(e.clientX, e.clientY);
-      setWire({ ...wire, mx: g.x, my: g.y });
-    }
-  }
-
-  function onPointerUp() {
-    pan.current = null;
-    drag.current = null;
-    setWire(null);
-  }
-
-  function startNodeDrag(e: React.PointerEvent, node: GraphNode) {
-    if (e.button !== 0) return;
-    e.stopPropagation();
-    const g = toGraph(e.clientX, e.clientY);
-    drag.current = { id: node.id, ox: g.x - node.x, oy: g.y - node.y, nx: node.x, ny: node.y };
-    setSelected(node.id);
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-  }
-
-  function startWire(e: React.PointerEvent, node: GraphNode, portId: string) {
-    e.stopPropagation();
-    const p = portPos(node, portId, "out");
-    setWire({ from: node.id, fromPort: portId, x: p.x, y: p.y, mx: p.x, my: p.y });
-  }
-
-  function dropWire(to: GraphNode, toPort: string) {
-    if (!wire || wire.from === to.id) return;
-    const fromNode = nodes.find((n) => n.id === wire.from);
-    if (!fromNode) return;
-    const fromDef = NODE_PORTS[fromNode.kind].outputs.find((p) => p.id === wire.fromPort);
-    const toDef = NODE_PORTS[to.kind].inputs.find((p) => p.id === toPort);
-    if (!fromDef || !toDef) return;
-    if (!canConnect(fromDef.type, toDef.type)) return;
-    addEdge({
-      id: uid("e"),
-      from: wire.from,
-      fromPort: wire.fromPort,
-      to: to.id,
-      toPort,
-    });
-    setWire(null);
-  }
-
-  function spawn(kind: NodeKind) {
-    addNode({
-      id: uid("n"),
-      kind,
-      x: 40 + (nodes.length % 4) * 24,
-      y: 48 + nodes.length * 28,
-      title: NODE_META[kind].label,
-      data: defaultData(kind),
-    });
-  }
-
-  const selected = nodes.find((n) => n.id === selectedId);
-
-  return (
-    <div className="h-full min-h-0">
-      <MobileGraphStack
-        nodes={nodes}
-        edges={edges}
-        characters={characters}
-        queueRunning={queueRunning}
-        onSpawn={spawn}
-        onReset={resetGraph}
-        onRemove={removeNode}
-        onPatch={(id, data) => patchNodeData(id, data)}
-      />
-      <div className="hidden h-full min-h-0 lg:flex">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline px-3">
-            <span className="hidden text-[11px] font-medium uppercase tracking-[0.16em] text-subtle sm:block">
-              Graph
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {(["character", "prompt", "image", "video", "output"] as NodeKind[]).map((k) => (
-                <Button key={k} size="sm" variant="ghost" onClick={() => spawn(k)}>
-                  <Plus className="size-3.5" />
-                  {NODE_META[k].label}
-                </Button>
-              ))}
-            </div>
-            <div className="ml-auto flex gap-1">
-              <Button size="sm" variant="outline" onClick={resetGraph}>
-                <RotateCcw className="size-3.5" />
-                Reset
-              </Button>
-              <Button size="sm" disabled={queueRunning} onClick={() => void queueGraph()}>
-                <Play className="size-3.5" />
-                Queue Prompt
-              </Button>
-            </div>
-          </div>
-          <div
-            ref={surface}
-            className="graph-grid relative min-h-0 flex-1 cursor-grab overflow-hidden touch-none active:cursor-grabbing"
-            onWheel={onWheel}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            <div
-              className="absolute left-0 top-0 origin-top-left will-change-transform"
-              style={{
-                width: 2800,
-                height: 1800,
-                transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.k})`,
-              }}
-            >
-              <svg className="pointer-events-none absolute left-0 top-0 overflow-visible" width="1" height="1">
-                {edges.map((e) => {
-                  const a = nodes.find((n) => n.id === e.from);
-                  const b = nodes.find((n) => n.id === e.to);
-                  if (!a || !b) return null;
-                  const p1 = portPos(a, e.fromPort, "out");
-                  const p2 = portPos(b, e.toPort, "in");
-                  return (
-                    <path
-                      key={e.id}
-                      d={bezierPath(p1.x, p1.y, p2.x, p2.y)}
-                      fill="none"
-                      stroke="color-mix(in oklab, var(--color-still) 70%, transparent)"
-                      strokeWidth="2"
-                      className="pointer-events-auto cursor-pointer"
-                      onPointerDown={(ev) => {
-                        ev.stopPropagation();
-                        removeEdge(e.id);
-                      }}
-                    />
-                  );
-                })}
-                {wire ? (
-                  <path
-                    d={bezierPath(wire.x, wire.y, wire.mx, wire.my)}
-                    fill="none"
-                    stroke="var(--color-accent)"
-                    strokeWidth="2"
-                    strokeDasharray="6 4"
-                  />
-                ) : null}
-              </svg>
-              {nodes.map((node) => (
-                <GraphNodeCard
-                  key={node.id}
-                  node={node}
-                  selected={node.id === selectedId}
-                  characters={characters}
-                  onDrag={startNodeDrag}
-                  onStartWire={startWire}
-                  onDropWire={dropWire}
-                  onPatch={(data) => patchNodeData(node.id, data)}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-        <aside className="hidden w-[300px] shrink-0 overflow-y-auto border-l border-hairline p-4 lg:block">
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-subtle">Inspector</p>
-          {selected ? (
-            <div className="mt-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="font-medium">{NODE_META[selected.kind].label}</h2>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={() => removeNode(selected.id)}
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </div>
-              {selected.status === "error" && selected.error ? (
-                <p className="text-xs text-danger">{selected.error}</p>
-              ) : null}
-              <p className="font-mono text-[11px] text-subtle">{selected.id}</p>
-              <p className="text-xs leading-relaxed text-muted">
-                Drag from an output port to an input to wire. Click a wire to delete. Scroll to zoom, Alt-drag the canvas.
-                Queue Prompt runs in topological order, same as ComfyUI.
-              </p>
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-muted">Select a node to inspect it.</p>
-          )}
-        </aside>
-      </div>
-    </div>
-  );
-}
-
-function MobileGraphStack({
-  nodes,
-  edges,
-  characters,
-  queueRunning,
-  onSpawn,
-  onReset,
-  onRemove,
-  onPatch,
-}: {
-  nodes: GraphNode[];
-  edges: GraphEdge[];
-  characters: { id: string; name: string; refs: string[] }[];
-  queueRunning: boolean;
-  onSpawn: (kind: NodeKind) => void;
-  onReset: () => void;
-  onRemove: (id: string) => void;
-  onPatch: (id: string, data: Record<string, unknown>) => void;
-}) {
-  return (
-    <div className="flex h-full min-h-0 flex-col lg:hidden">
-      <div className="shrink-0 space-y-2 border-b border-hairline p-3">
-        <div className="flex gap-2">
-          <Button className="flex-1" disabled={queueRunning} onClick={() => void queueGraph()}>
-            <Play className="size-4" />
-            Run workflow
-          </Button>
-          <Button variant="outline" onClick={onReset}>
-            <RotateCcw className="size-4" />
-            Reset
-          </Button>
-        </div>
-        <div className="flex gap-1 overflow-x-auto pb-1">
-          {(["character", "prompt", "image", "video", "output"] as NodeKind[]).map((k) => (
-            <Button key={k} size="sm" variant="ghost" className="h-11 shrink-0" onClick={() => onSpawn(k)}>
-              <Plus className="size-3.5" />
-              {NODE_META[k].label}
-            </Button>
-          ))}
-        </div>
-        <p className="text-xs text-subtle">Runs in card order. On a large screen you can open the canvas and wire nodes.</p>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        <ol className="space-y-3">
-          {nodes.map((node, i) => {
-            const meta = NODE_META[node.kind];
-            const tint =
-              meta.tint === "cast"
-                ? "bg-cast"
-                : meta.tint === "prompt"
-                  ? "bg-prompt"
-                  : meta.tint === "still"
-                    ? "bg-still"
-                    : meta.tint === "motion"
-                      ? "bg-motion"
-                      : "bg-muted";
-            const incoming = edges.filter((e) => e.to === node.id);
-            return (
-              <li key={node.id} className="overflow-hidden rounded-lg border border-border bg-panel">
-                <div className={cn("flex h-11 items-center justify-between px-2 pl-3", tint)}>
-                  <span className="text-xs font-medium text-bg">
-                    {String(i + 1).padStart(2, "0")} · {meta.label}
-                  </span>
-                  <div className="flex items-center">
-                    {node.status && node.status !== "idle" ? (
-                      <span className="mr-1 text-[10px] text-bg/80">{node.status}</span>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="grid size-11 place-items-center text-bg/80"
-                      onClick={() => onRemove(node.id)}
-                    >
-                      <Trash2 className="size-3.5" />
-                      <span className="sr-only">Delete node</span>
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-2 p-3">
-                  {incoming.length ? (
-                    <p className="text-[11px] text-subtle">
-                      In: 
-                      {incoming
-                        .map((e) => nodes.find((n) => n.id === e.from))
-                        .filter(Boolean)
-                        .map((n) => NODE_META[n!.kind].label)
-                        .join(" · ")}
-                    </p>
-                  ) : null}
-                  <NodeBody node={node} characters={characters} onPatch={(d) => onPatch(node.id, d)} />
-                  {node.error ? <p className="text-xs text-danger">{node.error}</p> : null}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-    </div>
-  );
-}
+type StudioFlowNode = Node<{ studio: GraphNode }, NodeKind>;
 
 function defaultData(kind: NodeKind): GraphNode["data"] {
   const s = useStudio.getState().settings;
@@ -426,83 +71,289 @@ function defaultData(kind: NodeKind): GraphNode["data"] {
   return { label: "Output" };
 }
 
-function GraphNodeCard({
-  node,
-  selected,
-  characters,
-  onDrag,
-  onStartWire,
-  onDropWire,
-  onPatch,
-}: {
-  node: GraphNode;
-  selected: boolean;
-  characters: { id: string; name: string; refs: string[] }[];
-  onDrag: (e: React.PointerEvent, n: GraphNode) => void;
-  onStartWire: (e: React.PointerEvent, n: GraphNode, port: string) => void;
-  onDropWire: (n: GraphNode, port: string) => void;
-  onPatch: (d: Record<string, unknown>) => void;
-}) {
+function PortHandles({ kind }: { kind: NodeKind }) {
+  const ins = NODE_PORTS[kind].inputs;
+  const outs = NODE_PORTS[kind].outputs;
+  return (
+    <>
+      {ins.map((p, i) => (
+        <Handle
+          key={`in-${p.id}`}
+          type="target"
+          id={p.id}
+          position={Position.Left}
+          title={p.label}
+          style={{ top: 54 + i * 22 }}
+        />
+      ))}
+      {outs.map((p, i) => (
+        <Handle
+          key={`out-${p.id}`}
+          type="source"
+          id={p.id}
+          position={Position.Right}
+          title={p.label}
+          style={{ top: 54 + i * 22 }}
+        />
+      ))}
+    </>
+  );
+}
+
+function StudioNode({ data }: NodeProps<StudioFlowNode>) {
+  const node = data.studio;
+  const characters = useStudio((s) => s.characters);
+  const patchNodeData = useStudio((s) => s.patchNodeData);
+  const removeNode = useStudio((s) => s.removeNode);
   const meta = NODE_META[node.kind];
-  const tint =
-    meta.tint === "cast"
-      ? "bg-cast"
-      : meta.tint === "prompt"
-        ? "bg-prompt"
-        : meta.tint === "still"
-          ? "bg-still"
-          : meta.tint === "motion"
-            ? "bg-motion"
-            : "bg-muted";
-  const ins = NODE_PORTS[node.kind].inputs;
-  const outs = NODE_PORTS[node.kind].outputs;
 
   return (
-    <div
-      className={cn(
-        "absolute rounded-md border bg-panel shadow-panel",
-        selected ? "border-accent/50" : "border-border",
-        node.status === "running" && "ring-1 ring-motion/50",
-        node.status === "error" && "ring-1 ring-danger/50",
-        node.status === "done" && "ring-1 ring-ok/40",
-      )}
-      style={{ left: node.x, top: node.y, width: meta.w }}
-      onPointerDown={(e) => onDrag(e, node)}
-    >
-      <div className={cn("flex h-8 items-center gap-2 rounded-t-[5px] px-2", tint)}>
-        <span className="text-[11px] font-medium text-bg">{meta.label}</span>
-        {node.status && node.status !== "idle" ? (
-          <span className="ml-auto text-[10px] text-bg/80">{node.status}</span>
-        ) : null}
+    <FlowNode handles={{ target: false, source: false }} className="w-[268px]!">
+      <PortHandles kind={node.kind} />
+      <NodeHeader>
+        <NodeTitle className="text-xs">{meta.label}</NodeTitle>
+        <NodeAction>
+          {node.status && node.status !== "idle" ? (
+            <span className="mr-1 text-[10px] text-muted-foreground">{node.status}</span>
+          ) : null}
+          <Button size="icon-xs" variant="ghost" onClick={() => removeNode(node.id)}>
+            <Trash2 className="size-3.5" />
+          </Button>
+        </NodeAction>
+      </NodeHeader>
+      <NodeContent>
+        <NodeBody node={node} characters={characters} onPatch={(d) => patchNodeData(node.id, d)} />
+        {node.error ? <p className="mt-2 text-xs text-destructive">{node.error}</p> : null}
+      </NodeContent>
+    </FlowNode>
+  );
+}
+
+const nodeTypes: NodeTypes = {
+  character: StudioNode,
+  prompt: StudioNode,
+  image: StudioNode,
+  video: StudioNode,
+  output: StudioNode,
+};
+
+export function GraphView() {
+  return (
+    <ReactFlowProvider>
+      <GraphCanvas />
+    </ReactFlowProvider>
+  );
+}
+
+function GraphCanvas() {
+  const nodes = useStudio((s) => s.nodes);
+  const edges = useStudio((s) => s.edges);
+  const selectedId = useStudio((s) => s.selectedId);
+  const characters = useStudio((s) => s.characters);
+  const queueRunning = useStudio((s) => s.queueRunning);
+  const setSelected = useStudio((s) => s.setSelected);
+  const updateNode = useStudio((s) => s.updateNode);
+  const addNode = useStudio((s) => s.addNode);
+  const addEdge = useStudio((s) => s.addEdge);
+  const removeEdge = useStudio((s) => s.removeEdge);
+  const removeNode = useStudio((s) => s.removeNode);
+  const resetGraph = useStudio((s) => s.resetGraph);
+  const patchNodeData = useStudio((s) => s.patchNodeData);
+
+  const flowNodes: StudioFlowNode[] = useMemo(
+    () =>
+      nodes.map((n) => ({
+        id: n.id,
+        type: n.kind,
+        position: { x: n.x, y: n.y },
+        data: { studio: n },
+        selected: n.id === selectedId,
+        width: NODE_META[n.kind].w,
+      })),
+    [nodes, selectedId],
+  );
+
+  const flowEdges: Edge[] = useMemo(
+    () =>
+      edges.map((e) => ({
+        id: e.id,
+        source: e.from,
+        sourceHandle: e.fromPort,
+        target: e.to,
+        targetHandle: e.toPort,
+      })),
+    [edges],
+  );
+
+  const onNodesChange: OnNodesChange<StudioFlowNode> = useCallback(
+    (changes) => {
+      for (const change of changes) {
+        if (change.type === "position" && change.position) {
+          updateNode(change.id, { x: change.position.x, y: change.position.y });
+        }
+        if (change.type === "select") {
+          setSelected(change.selected ? change.id : null);
+        }
+        if (change.type === "remove") {
+          removeNode(change.id);
+        }
+      }
+    },
+    [updateNode, setSelected, removeNode],
+  );
+
+  const onConnect = useCallback(
+    (c: Connection) => {
+      if (!c.source || !c.target) return;
+      const fromNode = nodes.find((n) => n.id === c.source);
+      const toNode = nodes.find((n) => n.id === c.target);
+      if (!fromNode || !toNode) return;
+      const fromDef = NODE_PORTS[fromNode.kind].outputs.find((p) => p.id === c.sourceHandle);
+      const toDef = NODE_PORTS[toNode.kind].inputs.find((p) => p.id === c.targetHandle);
+      if (!fromDef || !toDef) return;
+      if (!canConnect(fromDef.type, toDef.type)) return;
+      addEdge({
+        id: uid("e"),
+        from: c.source,
+        fromPort: c.sourceHandle ?? fromDef.id,
+        to: c.target,
+        toPort: c.targetHandle ?? toDef.id,
+      });
+    },
+    [nodes, addEdge],
+  );
+
+  function spawn(kind: NodeKind) {
+    addNode({
+      id: uid("n"),
+      kind,
+      x: 40 + (nodes.length % 4) * 24,
+      y: 48 + nodes.length * 28,
+      title: NODE_META[kind].label,
+      data: defaultData(kind),
+    });
+  }
+
+  const selected = nodes.find((n) => n.id === selectedId);
+
+  const toolbar = (
+    <div className="flex flex-wrap gap-1">
+      {(["character", "prompt", "image", "video", "output"] as NodeKind[]).map((k) => (
+        <Button key={k} size="sm" variant="ghost" onClick={() => spawn(k)}>
+          <Plus className="size-3.5" />
+          {NODE_META[k].label}
+        </Button>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="h-full min-h-0">
+      <div className="flex h-full min-h-0 flex-col lg:hidden">
+        <div className="shrink-0 space-y-2 border-b p-3">
+          <div className="flex gap-2">
+            <Button className="flex-1" disabled={queueRunning} onClick={() => void queueGraph()}>
+              <Play className="size-4" />
+              Run workflow
+            </Button>
+            <Button variant="outline" onClick={resetGraph}>
+              <RotateCcw className="size-4" />
+              Reset
+            </Button>
+          </div>
+          <div className="flex gap-1 overflow-x-auto pb-1">{toolbar}</div>
+          <p className="text-xs text-muted-foreground">
+            Runs in card order. On a large screen you can open the canvas and wire nodes.
+          </p>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-3">
+          <ol className="space-y-3">
+            {nodes.map((node, i) => {
+              const incoming = edges.filter((e) => e.to === node.id);
+              return (
+                <Card key={node.id}>
+                  <CardHeader className="flex-row items-center justify-between space-y-0 p-3">
+                    <CardTitle className="text-xs">
+                      {String(i + 1).padStart(2, "0")} · {NODE_META[node.kind].label}
+                    </CardTitle>
+                    <Button size="icon-sm" variant="ghost" onClick={() => removeNode(node.id)}>
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-2 p-3 pt-0">
+                    {incoming.length ? (
+                      <p className="text-[11px] text-muted-foreground">
+                        In:{" "}
+                        {incoming
+                          .map((e) => nodes.find((n) => n.id === e.from))
+                          .filter(Boolean)
+                          .map((n) => NODE_META[n!.kind].label)
+                          .join(" · ")}
+                      </p>
+                    ) : null}
+                    <NodeBody
+                      node={node}
+                      characters={characters}
+                      onPatch={(d) => patchNodeData(node.id, d)}
+                    />
+                    {node.error ? <p className="text-xs text-destructive">{node.error}</p> : null}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </ol>
+        </div>
       </div>
-      <div className="relative px-3 py-2">
-        {ins.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            title={p.label}
-            className="absolute -left-1.5 size-3 rounded-full border border-border bg-elevated"
-            style={{ top: 8 + ins.indexOf(p) * 22 }}
-            onPointerUp={(e) => {
-              e.stopPropagation();
-              onDropWire(node, p.id);
-            }}
-          />
-        ))}
-        {outs.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            title={p.label}
-            className="absolute -right-1.5 size-3 rounded-full border border-accent bg-still"
-            style={{ top: 8 + outs.indexOf(p) * 22 }}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              onStartWire(e, node, p.id);
-            }}
-          />
-        ))}
-        <NodeBody node={node} characters={characters} onPatch={onPatch} />
+
+      <div className="hidden h-full min-h-0 lg:block">
+        <Canvas
+          className="h-full"
+          nodes={flowNodes}
+          edges={flowEdges}
+          nodeTypes={nodeTypes}
+          onNodesChange={onNodesChange as unknown as OnNodesChange}
+          onConnect={onConnect}
+          onEdgesChange={(changes) => {
+            for (const change of changes) {
+              if (change.type === "remove") removeEdge(change.id);
+            }
+          }}
+          fitView={false}
+          panOnDrag
+          panOnScroll={false}
+          selectionOnDrag={false}
+          deleteKeyCode={["Backspace", "Delete"]}
+        >
+          <Controls />
+          <Panel position="top-left" className="flex items-center gap-2">
+            {toolbar}
+            <Button size="sm" variant="outline" onClick={resetGraph}>
+              <RotateCcw className="size-3.5" />
+              Reset
+            </Button>
+            <Button size="sm" disabled={queueRunning} onClick={() => void queueGraph()}>
+              <Play className="size-3.5" />
+              Queue Prompt
+            </Button>
+          </Panel>
+          <Panel position="top-right" className="w-[280px] p-3">
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+              Inspector
+            </p>
+            {selected ? (
+              <div className="mt-3 space-y-2">
+                <h2 className="text-sm font-medium">{NODE_META[selected.kind].label}</h2>
+                <p className="font-mono text-[11px] text-muted-foreground">{selected.id}</p>
+                <p className="text-xs text-muted-foreground">
+                  Drag from an output handle to an input to wire. Click a wire, then Delete.
+                  Queue Prompt runs in topological order.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-muted-foreground">Select a node to inspect it.</p>
+            )}
+          </Panel>
+        </Canvas>
       </div>
     </div>
   );
@@ -521,18 +372,12 @@ function NodeBody({
     const d = node.data as CharacterNodeData;
     const c = characters.find((x) => x.id === d.characterId);
     return (
-      <div className="space-y-2">
-        <SelectNative
+      <div className="space-y-2 nodrag nopan">
+        <SelectField
           value={d.characterId}
-          onChange={(e) => onPatch({ characterId: e.target.value })}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          {characters.map((x) => (
-            <option key={x.id} value={x.id}>
-              {x.name}
-            </option>
-          ))}
-        </SelectNative>
+          onValueChange={(characterId) => onPatch({ characterId })}
+          items={characters.map((x) => ({ value: x.id, label: x.name }))}
+        />
         {c?.refs[0] ? (
           <img src={c.refs[0]} alt="" className="h-20 w-full rounded-sm object-cover" />
         ) : null}
@@ -546,31 +391,28 @@ function NodeBody({
         rows={4}
         value={d.text}
         onChange={(e) => onPatch({ text: e.target.value })}
-        onPointerDown={(e) => e.stopPropagation()}
-        className="min-h-20 text-xs"
+        className="min-h-20 text-xs nodrag nopan nowheel"
       />
     );
   }
   if (node.kind === "image") {
     const d = node.data as ImageNodeData;
     return (
-      <div className="space-y-2" onPointerDown={(e) => e.stopPropagation()}>
-        <SelectNative value={d.model} onChange={(e) => onPatch({ model: e.target.value })}>
-          {IMAGE_MODELS.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>
-          ))}
-        </SelectNative>
+      <div className="space-y-2 nodrag nopan">
+        <SelectField
+          value={d.model}
+          onValueChange={(model) => onPatch({ model })}
+          items={IMAGE_MODELS.map((m) => ({ value: m.id, label: m.name }))}
+        />
         <div className="grid grid-cols-2 gap-1">
-          <SelectNative
+          <SelectField
             value={d.aspectRatio}
-            onChange={(e) => onPatch({ aspectRatio: e.target.value })}
-          >
-            {["1:1", "2:3", "3:4", "9:16", "16:9"].map((a) => (
-              <option key={a}>{a}</option>
-            ))}
-          </SelectNative>
+            onValueChange={(aspectRatio) => onPatch({ aspectRatio })}
+            items={["1:1", "2:3", "3:4", "9:16", "16:9"].map((a) => ({
+              value: a,
+              label: a,
+            }))}
+          />
           <Input
             placeholder="seed"
             value={d.seed}
@@ -581,7 +423,7 @@ function NodeBody({
         {d.previewUrl ? (
           <img src={d.previewUrl} alt="" className="h-24 w-full rounded-sm object-cover" />
         ) : (
-          <p className="text-[11px] text-subtle">Waiting on queue</p>
+          <p className="text-[11px] text-muted-foreground">Waiting on queue</p>
         )}
       </div>
     );
@@ -589,24 +431,24 @@ function NodeBody({
   if (node.kind === "video") {
     const d = node.data as VideoNodeData;
     return (
-      <div className="space-y-2" onPointerDown={(e) => e.stopPropagation()}>
-        <SelectNative value={d.model} onChange={(e) => onPatch({ model: e.target.value })}>
-          {VIDEO_MODELS.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>
-          ))}
-        </SelectNative>
+      <div className="space-y-2 nodrag nopan">
+        <SelectField
+          value={d.model}
+          onValueChange={(model) => onPatch({ model })}
+          items={VIDEO_MODELS.map((m) => ({ value: m.id, label: m.name }))}
+        />
         <Textarea
           rows={2}
-          className="min-h-14 text-xs"
+          className="min-h-14 text-xs nowheel"
           value={d.prompt}
           onChange={(e) => onPatch({ prompt: e.target.value })}
         />
         {d.previewUrl ? (
           <video src={d.previewUrl} className="h-24 w-full rounded-sm object-cover" muted />
         ) : (
-          <p className="text-[11px] text-subtle">{d.duration}s · {d.resolution}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {d.duration}s · {d.resolution}
+          </p>
         )}
       </div>
     );
@@ -619,6 +461,6 @@ function NodeBody({
       <img src={d.previewUrl} alt="" className="h-28 w-full rounded-sm object-cover" />
     )
   ) : (
-    <p className="text-[11px] text-subtle">Wire an image or video</p>
+    <p className="text-[11px] text-muted-foreground">Wire an image or video</p>
   );
 }

@@ -67,8 +67,9 @@ async function emitSessionCookie(
 
   // Primary path: TanStack Start's response cookie store (reaches the browser).
   try {
-    const { setCookie } = await import("@tanstack/react-start/server");
-    setCookie(sessionTokenName, sessionValue, {
+    const { cookies } = await import("next/headers");
+    const jar = await cookies();
+    jar.set(sessionTokenName, sessionValue, {
       path: cookieOptions.path ?? "/",
       httpOnly: cookieOptions.httpOnly ?? true,
       secure: cookieOptions.secure ?? true,
@@ -77,7 +78,7 @@ async function emitSessionCookie(
       domain: cookieOptions.domain,
     });
   } catch (err) {
-    console.error(`${LOG} TanStack setCookie failed`, err);
+    console.error(`${LOG} Next.js cookies().set failed`, err);
   }
 
   // Also stash on Better Auth responseHeaders so after-hooks (tanstackStartCookies)
@@ -110,8 +111,9 @@ async function expireSessionDataCookie(
   const path = cookie.attributes.path ?? "/";
   const secure = cookie.attributes.secure ?? true;
   try {
-    const { setCookie } = await import("@tanstack/react-start/server");
-    setCookie(cookie.name, "", {
+    const { cookies } = await import("next/headers");
+    const jar = await cookies();
+    jar.set(cookie.name, "", {
       path,
       httpOnly: true,
       secure,
@@ -119,7 +121,7 @@ async function expireSessionDataCookie(
       maxAge: 0,
     });
   } catch (err) {
-    console.error(`${LOG} TanStack setCookie (expire session_data) failed`, err);
+    console.error(`${LOG} Next.js cookies().set (expire session_data) failed`, err);
   }
   try {
     ctx.context.responseHeaders?.append(
@@ -153,8 +155,9 @@ async function writeGateMarkerCookie(
       : undefined;
   const value = clear ? "" : "1";
   try {
-    const { setCookie } = await import("@tanstack/react-start/server");
-    setCookie(GATE_SESSION_MARKER_COOKIE, value, {
+    const { cookies } = await import("next/headers");
+    const jar = await cookies();
+    jar.set(GATE_SESSION_MARKER_COOKIE, value, {
       path: "/",
       httpOnly: false,
       secure: true,
@@ -162,7 +165,7 @@ async function writeGateMarkerCookie(
       maxAge,
     });
   } catch (err) {
-    console.error(`${LOG} TanStack setCookie (gate marker) failed`, err);
+    console.error(`${LOG} Next.js cookies().set (gate marker) failed`, err);
   }
   try {
     ctx.context.responseHeaders?.append(
