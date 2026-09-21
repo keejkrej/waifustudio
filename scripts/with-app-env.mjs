@@ -27,12 +27,12 @@ import { fileURLToPath } from "node:url";
 
 export const APP_ENV_REL_PATH = ".grok/app-env.json";
 
-const VITE_PREFIX = "VITE_";
+const PUBLIC_PREFIXES = ["VITE_", "NEXT_PUBLIC_"];
 
 /**
- * Parse an app-env document, keeping only `VITE_`-prefixed string entries.
- * Anything unparseable is an empty environment — a workspace without the file
- * must behave exactly like today (auth on, no overrides).
+ * Parse an app-env document, keeping only public (VITE_ / NEXT_PUBLIC_) string
+ * entries. Anything unparseable is an empty environment — a workspace without
+ * the file must behave exactly like today (auth on, no overrides).
  */
 export function parseAppEnv(text) {
   let parsed;
@@ -44,7 +44,7 @@ export function parseAppEnv(text) {
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return {};
   const env = {};
   for (const [key, value] of Object.entries(parsed)) {
-    if (!key.startsWith(VITE_PREFIX)) continue;
+    if (!PUBLIC_PREFIXES.some((prefix) => key.startsWith(prefix))) continue;
     if (typeof value !== "string") continue;
     env[key] = value;
   }
@@ -62,7 +62,14 @@ export function readAppEnv(root) {
 
 /** File values under the process environment: an explicit override wins. */
 export function mergeAppEnv(appEnv, processEnv) {
-  return { ...appEnv, ...processEnv };
+  const mapped = { ...appEnv };
+  if (mapped.VITE_AUTH_ENABLED && !mapped.NEXT_PUBLIC_AUTH_ENABLED) {
+    mapped.NEXT_PUBLIC_AUTH_ENABLED = mapped.VITE_AUTH_ENABLED;
+  }
+  if (mapped.VITE_STUN_URLS && !mapped.NEXT_PUBLIC_STUN_URLS) {
+    mapped.NEXT_PUBLIC_STUN_URLS = mapped.VITE_STUN_URLS;
+  }
+  return { ...mapped, ...processEnv };
 }
 
 /**

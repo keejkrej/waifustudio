@@ -1,3 +1,5 @@
+"use client";
+
 import { toast } from "sonner";
 import { uid, urlToDataUrl } from "@/lib/utils";
 import {

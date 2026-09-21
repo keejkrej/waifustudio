@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { pendingMigrations } from "../../scripts/migration-plan.mjs";
 
 /** Which database backend is active. */
@@ -137,11 +139,13 @@ async function createPgliteSql(): Promise<Sql> {
   // passes serialized on a global chain so concurrent callers never
   // double-apply.
   const migrate = async (): Promise<void> => {
-    const migrations = import.meta.glob("/migrations/*.sql", {
-      query: "?raw",
-      import: "default",
-      eager: true,
-    }) as Record<string, string>;
+    const dir = join(process.cwd(), "migrations");
+    const files = readdirSync(dir).filter((name) => name.endsWith(".sql"));
+    const migrations: Record<string, string> = {};
+    for (const name of files) {
+      const path = `/migrations/${name}`;
+      migrations[path] = readFileSync(join(dir, name), "utf8");
+    }
     const doneRows = await pg.query<{ name: string }>(
       "select name from _migrations",
     );
@@ -172,8 +176,8 @@ let sqlPromise: Promise<Sql> | null = null;
 async function createSql(): Promise<Sql> {
   if (typeof window !== "undefined") {
     throw new Error(
-      "@/lib/db is server-only — call getSql() from a createServerFn handler " +
-        "or a server route loader, never from client code.",
+      "@/lib/db is server-only — call getSql() from a Route Handler " +
+        "or a Server Action, never from client code.",
     );
   }
   return dbSource === "neon" ? createNeonSql() : createPgliteSql();

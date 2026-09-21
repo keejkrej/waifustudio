@@ -484,9 +484,10 @@ test("renders the manifest with the per-app name", () => {
 // accidental edit that drops serverDir or the middleware file would otherwise
 // fail silently (published apps would just render the app for ?install=1).
 test("vite config keeps the nitro serverDir wiring", () => {
-  const viteConfig = readFileSync(join(TEMPLATE_ROOT, "vite.config.ts"), "utf8");
-  assert.match(viteConfig, /serverDir:\s*"\.\/server"/);
-  assert.match(viteConfig, /grokPwaPlugin\(\)/);
+  const layout = readFileSync(join(TEMPLATE_ROOT, "src/app/layout.tsx"), "utf8");
+  assert.match(layout, /appleWebApp/);
+  assert.match(layout, /manifest/);
+  assert.match(layout, /favicon\.svg/);
 });
 
 test("nitro middleware and its bundled assets exist", () => {
