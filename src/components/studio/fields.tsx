@@ -40,7 +40,13 @@ export function SelectField({
   className?: string;
 }) {
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    <Select
+      value={value}
+      onValueChange={(next) => {
+        if (next == null) return;
+        onValueChange(String(next));
+      }}
+    >
       <SelectTrigger className={className}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>

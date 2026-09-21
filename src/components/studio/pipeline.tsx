@@ -336,17 +336,30 @@ export function PipelineView() {
           )}
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             {pipeline.stillPreviewUrl ? (
-              <Button asChild variant="outline">
-                <a href={pipeline.stillPreviewUrl} download={`${character.name}-still.png`}>
-                  Download still
-                </a>
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={
+                  <a
+                    href={pipeline.stillPreviewUrl}
+                    download={`${character.name}-still.png`}
+                  />
+                }
+              >
+                Download still
               </Button>
             ) : null}
             {pipeline.videoPreviewUrl ? (
-              <Button asChild>
-                <a href={pipeline.videoPreviewUrl} download={`${character.name}-clip.mp4`}>
-                  Download video
-                </a>
+              <Button
+                nativeButton={false}
+                render={
+                  <a
+                    href={pipeline.videoPreviewUrl}
+                    download={`${character.name}-clip.mp4`}
+                  />
+                }
+              >
+                Download video
               </Button>
             ) : null}
           </div>

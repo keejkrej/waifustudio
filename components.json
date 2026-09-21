@@ -1,6 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "radix-lyra",
+  "style": "base-lyra",
   "rsc": true,
   "tsx": true,
   "tailwind": {
@@ -21,9 +21,5 @@
   },
   "menuColor": "default",
   "menuAccent": "subtle",
-  "registries": {
-    "ai-elements": {
-      "url": "https://elements.ai-sdk.dev/api/registry"
-    }
-  }
+  "registries": {}
 }

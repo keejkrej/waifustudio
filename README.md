@@ -16,7 +16,11 @@ Sample characters are original. They are not existing game IP.
 
 ## Stack
 
-Next.js (App Router) · React 19 · shadcn/ui (Lyra + Radix) · Vercel AI Elements · Zustand · IndexedDB · better-auth
+Next.js (App Router) · React 19 · shadcn/ui (Lyra + **Base UI**) · Vercel AI Elements · Zustand · IndexedDB · better-auth
+
+shadcn is initialized with `--preset lyra --base base` (`components.json` style `base-lyra`). Product UI lives in `src/components/ui` on `@base-ui/react`.
+
+Kept AI Elements (adapted off Radix `asChild` / `openDelay`): `canvas`, `controls`, `node`, `panel`, `prompt-input`, `suggestion`, `queue`. The rest of the AI Elements registry was dropped because those components still target Radix APIs and would reintroduce `@radix-ui/*`.
 
 ## Run locally
 
